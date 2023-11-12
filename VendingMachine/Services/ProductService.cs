@@ -15,14 +15,14 @@ namespace VendingMachine.Services
 
         public async Task<IEnumerable<Product>> GetAllProduct()
         {
-            return await _dbContext.Products.ToListAsync();
+            return await  _dbContext.Products.Include(p=>p.SellerId).ToListAsync();
         }
 
         public async Task<Product> GetProductById(int id)
         {
-            return await _dbContext.Products.FindAsync(id);
+            return await _dbContext.Products.Include(p => p.Seller).FirstOrDefaultAsync(p => p.Id == id);
         }
-        public async Task<Product> CreateProduct(Product product, int sellerId)
+        public async Task<Product> CreateProduct(Product product, string sellerId)
         {
             if(product.SellerId == sellerId)
             {
@@ -32,7 +32,7 @@ namespace VendingMachine.Services
             await _dbContext.SaveChangesAsync();
             return product;
         }
-        public async Task<Product> UpdateProductAsync(int productId, Product product, int sellerId)
+        public async Task<Product> UpdateProductAsync(int productId, Product product, string sellerId)
         {
             var existingProduct = await _dbContext.Products.FindAsync(productId);
 
@@ -52,7 +52,7 @@ namespace VendingMachine.Services
             await _dbContext.SaveChangesAsync();
             return existingProduct;
         }
-        public async Task<bool> DeleteProduct(int id, int sellerId)
+        public async Task<bool> DeleteProduct(int id, string sellerId)
         {
             var product = await _dbContext.Products.FindAsync(id);
             if(product != null)
