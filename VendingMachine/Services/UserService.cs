@@ -51,13 +51,14 @@ namespace VendingMachine.Services
             var userRoles = await _userManager.GetRolesAsync(user);
             var authClaims = new List<Claim>
             {
-               new Claim(ClaimTypes.Name, user.UserName),
+               new Claim(ClaimTypes.Name, user.Id),
                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             };
             foreach (var userRole in userRoles)
             {
                 authClaims.Add(new Claim(ClaimTypes.Role, userRole));
             }
+            Console.WriteLine($"User ID: {user.Id}");
             string token = GenerateToken(authClaims);
             return (1, token);
         }
@@ -75,7 +76,8 @@ namespace VendingMachine.Services
             {
                 Email = model.Email,
                 SecurityStamp = Guid.NewGuid().ToString(),
-                UserName = model.Username
+                UserName = model.Username,
+                NormalizedEmail = model.FirstName.ToUpper()
             };
             var createUserResult = await _userManager.CreateAsync(user, model.Password);
             if (!createUserResult.Succeeded)
@@ -120,6 +122,31 @@ namespace VendingMachine.Services
             return true;
         }
 
+       
+        public async Task<bool> DepositCoin(string userId, int coinValue)
+        {
+            
+            var user = await  _userManager.FindByIdAsync(userId);
+            if (user == null || !await _userManager.IsInRoleAsync(user, "buyer"))
+                return false;
+
+
+            user.Deposit += coinValue;
+            var result = await _userManager.UpdateAsync(user);
+
+            return result.Succeeded;
+        }
+
+        public async Task<bool> ResetDeposit(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null || !await _userManager.IsInRoleAsync(user, "buyer"))
+                return false;
+            user.Deposit = 0;
+            var result = await _userManager.UpdateAsync(user);
+            return result.Succeeded;
+        }
+
         private string GenerateToken(IEnumerable<Claim> claims)
         {
             var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWTKey:Secret"]));
@@ -128,8 +155,8 @@ namespace VendingMachine.Services
             {
                 Issuer = _configuration["JWTKey:ValidIssuer"],
                 Audience = _configuration["JWTKey:ValidAudience"],
-                //Expires = DateTime.UtcNow.AddHours(_TokenExpiryTimeInHour),
-                Expires = DateTime.UtcNow.AddMinutes(1),
+                Expires = DateTime.UtcNow.AddHours(_TokenExpiryTimeInHour),
+                //Expires = DateTime.UtcNow.AddMinutes(1),
                 SigningCredentials = new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256),
                 Subject = new ClaimsIdentity(claims)
             };

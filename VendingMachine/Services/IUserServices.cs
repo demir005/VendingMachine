@@ -11,8 +11,12 @@ namespace VendingMachine.Services
         Task<ApplicationUser> GetUserById(string userId);
         Task<bool> UpdateUser(int userId, UpdateUserModel model);
         Task<bool> DeleteUser(int userId);
-        Task<IEnumerable<ApplicationUser>> GetAllUsers(); // doesnt work 
+        Task<IEnumerable<ApplicationUser>> GetAllUsers();
 
-        
+        Task<bool> DepositCoin(string userId, int coinValue);
+
+        Task<bool> ResetDeposit(string userId);
+
+
     }
 }

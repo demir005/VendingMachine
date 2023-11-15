@@ -10,7 +10,6 @@ namespace VendingMachine.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Produces("application/json")]
-    [Authorize(Roles = UserRoles.Seller)]
     public class ProductController : ControllerBase
     {
         private readonly IProductService _productService;
@@ -61,6 +60,7 @@ namespace VendingMachine.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Seller")]
         public async Task<IActionResult> CreateProduct([FromBody] Product product)
         {
             try
@@ -85,6 +85,7 @@ namespace VendingMachine.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Seller")]
         public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product product)
         {
             try
@@ -113,8 +114,8 @@ namespace VendingMachine.Controllers
             }
         }
 
-
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Seller")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
             try
@@ -140,6 +141,35 @@ namespace VendingMachine.Controllers
             {
                 _logger.LogError(ex.Message);
                 return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+        [HttpPost("buy")]
+        [Authorize(Roles = "Buyer")]
+        public async Task<IActionResult> BuyProduct([FromBody] BuyRequestDTO buyModel)
+        {
+            try
+            {
+                if (buyModel == null || buyModel.ProductId <= 0 || buyModel.Amount <= 0)
+                {
+                    return BadRequest("Invalid request");
+                }
+
+                var buyerId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                var (success, message, receipt) = await _productService.BuyProduct(buyerId, buyModel.ProductId, buyModel.Amount);
+
+                if (!success)
+                {
+                    return BadRequest(message);
+                }
+
+                return Ok(receipt);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                return StatusCode(500, "Internal server error");
             }
         }
     }

@@ -1,8 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Net;
 using System.Security.Claims;
 using VendingMachine.Models;
 using VendingMachine.Models.Dto;
@@ -137,6 +134,29 @@ namespace VendingMachine.Controllers
         }
 
 
+        [HttpPost("deposit")]
+        [Authorize(Roles = "Buyer")]
+        public async Task<IActionResult> DepositCoin([FromBody] DepositRequestDTO depositModel)
+        {
+            // Retrieve current user's ID
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            Console.WriteLine($"User ID: {userId}");
+            Console.WriteLine($"ClaimTypes: {ClaimTypes.NameIdentifier}");
+
+
+            // Validate coin value
+            if (!IsValidCoin(depositModel.CoinValue))
+                return BadRequest(new { error = "Invalid coin value" });
+
+            // Perform deposit
+            var depositResult = await _userService.DepositCoin(userId, depositModel.CoinValue);
+
+            if (depositResult)
+                return Ok(new { message = "Deposit successful" });
+            else
+                return BadRequest(new { error = "Failed to deposit. Please try again." });
+        }
+
         [Authorize]
         [HttpPost("logout/all")]
         public async Task<IActionResult> LogoutAllSessions()
@@ -153,6 +173,23 @@ namespace VendingMachine.Controllers
             return Ok("All sessions invalidated successfully");
         }
 
-        
+        [HttpPost("reset")]
+        [Authorize(Roles = "Buyer")]
+        public async Task<IActionResult> ResetDeposit()
+        {
+            // Retrieve current user's ID
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var resetResult = await _userService.ResetDeposit(userId);
+            if (resetResult)
+                return Ok(new { message = "Deposit reset successful" });
+            else
+                return BadRequest(new { error = "Failed to reset deposit. Please try again." });
+        }
+        private bool IsValidCoin(int coinValue)
+        {
+            // Validate against your allowed coin values (5, 10, 20, 50, 100)
+            var validCoinValues = new List<int> { 5, 10, 20, 50, 100 };
+            return validCoinValues.Contains(coinValue);
+        }
     }
 }
