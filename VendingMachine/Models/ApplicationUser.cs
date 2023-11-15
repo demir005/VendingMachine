@@ -8,5 +8,7 @@ namespace VendingMachine.Models
         public string LastName { get; set; }
         public double Deposit { get; set; }
         public string SessionToken { get; set; }
+
+        public ICollection<Product> Products { get; set; }
     }
 }

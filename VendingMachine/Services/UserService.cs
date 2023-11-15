@@ -29,7 +29,6 @@ namespace VendingMachine.Services
         }
 
         
-
         public async Task<IEnumerable<ApplicationUser>> GetAllUsers()
         {
             return await _userManager.Users.ToListAsync();
@@ -51,7 +50,7 @@ namespace VendingMachine.Services
             var userRoles = await _userManager.GetRolesAsync(user);
             var authClaims = new List<Claim>
             {
-               new Claim(ClaimTypes.Name, user.Id),
+               new Claim(ClaimTypes.NameIdentifier, user.Id),
                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             };
             foreach (var userRole in userRoles)
@@ -121,8 +120,7 @@ namespace VendingMachine.Services
             await _context.SaveChangesAsync();
             return true;
         }
-
-       
+      
         public async Task<bool> DepositCoin(string userId, int coinValue)
         {
             
@@ -147,6 +145,7 @@ namespace VendingMachine.Services
             return result.Succeeded;
         }
 
+        #region private method
         private string GenerateToken(IEnumerable<Claim> claims)
         {
             var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWTKey:Secret"]));
@@ -165,7 +164,6 @@ namespace VendingMachine.Services
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
-
-        
+        #endregion
     }
 }

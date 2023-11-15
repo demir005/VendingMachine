@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using VendingMachine.Models;
 using VendingMachine.Models.Dto;
 using VendingMachine.Services;
 
@@ -140,10 +139,7 @@ namespace VendingMachine.Controllers
         {
             // Retrieve current user's ID
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            Console.WriteLine($"User ID: {userId}");
-            Console.WriteLine($"ClaimTypes: {ClaimTypes.NameIdentifier}");
-
-
+            
             // Validate coin value
             if (!IsValidCoin(depositModel.CoinValue))
                 return BadRequest(new { error = "Invalid coin value" });
