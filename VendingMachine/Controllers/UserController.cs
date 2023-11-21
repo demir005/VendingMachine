@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using VendingMachine.Models.Dto;
-using VendingMachine.Services;
+using VendingMachine.Services.Interfaces;
 
 namespace VendingMachine.Controllers
 {
@@ -97,9 +97,19 @@ namespace VendingMachine.Controllers
             {
                 if (!ModelState.IsValid)
                     return BadRequest("Invalid payload");
+
                 var (status, message) = await _userService.Login(model);
+
                 if (status == 0)
+                {
+                    if (message == "There is already an active session using your account")
+                    {
+                        // Redirect the user to terminate all sessions
+                        return RedirectToAction("LogoutAllSessions");
+                    }
                     return BadRequest(message);
+                }
+
                 return Ok(message);
             }
             catch (Exception ex)
@@ -132,6 +142,22 @@ namespace VendingMachine.Controllers
             }
         }
 
+        [HttpPost("logout/all")]
+        [Authorize]
+        public async Task<IActionResult> LogoutAllSessions()
+        {
+            // Retrieve current user's ID
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            // Perform logout for all sessions
+            var logoutResult = await _userService.TerminateAllSessions(userId);
+
+            if (logoutResult)
+                return Ok(new { message = "All sessions terminated successfully" });
+            else
+                return BadRequest(new { error = "Failed to terminate sessions. Please try again." });
+        }
+
 
         [HttpPost("deposit")]
         [Authorize(Roles = "Buyer")]
@@ -139,7 +165,7 @@ namespace VendingMachine.Controllers
         {
             // Retrieve current user's ID
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            
+
             // Validate coin value
             if (!IsValidCoin(depositModel.CoinValue))
                 return BadRequest(new { error = "Invalid coin value" });
@@ -153,21 +179,6 @@ namespace VendingMachine.Controllers
                 return BadRequest(new { error = "Failed to deposit. Please try again." });
         }
 
-        [Authorize]
-        [HttpPost("logout/all")]
-        public async Task<IActionResult> LogoutAllSessions()
-        {
-            // Get the user ID from the authenticated user
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-
-            var success = await _userService.LogoutAllSessions(userId);
-
-            if (!success)
-            {
-                return NotFound();
-            }
-            return Ok("All sessions invalidated successfully");
-        }
 
         [HttpPost("reset")]
         [Authorize(Roles = "Buyer")]

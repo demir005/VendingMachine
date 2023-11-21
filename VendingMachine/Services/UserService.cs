@@ -7,25 +7,27 @@ using VendingMachine.Models.Dto;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using VendingMachine.Services.Interfaces;
 
 namespace VendingMachine.Services
 {
     public class UserService : IUserServices
     {
-        private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IConfiguration _configuration;
-        private string secretKey;
 
 
         public UserService(UserManager<ApplicationUser> userManager, 
                            RoleManager<IdentityRole> roleManager, 
-                            IConfiguration configuration)
+                            IConfiguration configuration,
+                            SignInManager<ApplicationUser> signInManager)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _configuration = configuration;
+            _signInManager = signInManager;
         }
 
         
@@ -112,20 +114,11 @@ namespace VendingMachine.Services
             return result.Succeeded;
         }
 
-        public async Task<bool> LogoutAllSessions(int userId)
-        {
-            var user = await _context.ApplicationUsers.FindAsync(userId);
-            if (user == null) { return false; }
-            user.SessionToken = Guid.NewGuid().ToString();
-            await _context.SaveChangesAsync();
-            return true;
-        }
-      
+
         public async Task<bool> DepositCoin(string userId, int coinValue)
         {
-            
             var user = await  _userManager.FindByIdAsync(userId);
-            if (user == null || !await _userManager.IsInRoleAsync(user, "buyer"))
+            if (user == null || !await _userManager.IsInRoleAsync(user, UserRoles.Buyer))
                 return false;
 
 
@@ -143,6 +136,18 @@ namespace VendingMachine.Services
             user.Deposit = 0;
             var result = await _userManager.UpdateAsync(user);
             return result.Succeeded;
+        }
+
+        public async Task<bool> TerminateAllSessions(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return false;
+
+            // Sign the user out to invalidate existing authentication tokens
+            await _signInManager.SignOutAsync();
+
+            return true;
         }
 
         #region private method

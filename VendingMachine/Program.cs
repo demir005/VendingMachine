@@ -12,6 +12,7 @@ using VendingMachine;
 using VendingMachine.Data;
 using VendingMachine.Models;
 using VendingMachine.Services;
+using VendingMachine.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 

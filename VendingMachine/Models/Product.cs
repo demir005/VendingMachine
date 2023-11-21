@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using VendingMachine.Extensions;
 
 namespace VendingMachine.Models
@@ -9,6 +10,7 @@ namespace VendingMachine.Models
         public int Id { get; set; }
         public string ProductName { get; set; }
         public string SellerId { get; set; }
+        [JsonIgnore]
         public ApplicationUser Seller { get; set; }
         public int AmountAvailable { get; set; }
 

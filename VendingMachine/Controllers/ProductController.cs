@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using VendingMachine.Models;
 using VendingMachine.Models.Dto;
-using VendingMachine.Services;
+using VendingMachine.Services.Interfaces;
 
 namespace VendingMachine.Controllers
 {
@@ -59,14 +59,22 @@ namespace VendingMachine.Controllers
             }
         }
 
-        [HttpPost]
+        [HttpPost("CreateProduct")]
         [Authorize(Roles = "Seller")]
-        public async Task<IActionResult> CreateProduct([FromBody] Product product)
+        public async Task<IActionResult> CreateProduct([FromBody] CreateProductRequest request)
         {
             try
             {
-                // Assuming you have the SellerId available in the authentication token
+                
                 var sellerId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                var product = new Product
+                {
+                    ProductName = request.ProductName,
+                    SellerId = sellerId,
+                    AmountAvailable = request.AmountAvailable,
+                    Cost = request.Cost,
+                };
 
                 var createdProduct = await _productService.CreateProduct(product, sellerId);
 
@@ -86,7 +94,7 @@ namespace VendingMachine.Controllers
 
         [HttpPut("{id}")]
         [Authorize(Roles = "Seller")]
-        public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product product)
+        public async Task<IActionResult> UpdateProduct(int id, [FromBody] UpdateProductRequest product)
         {
             try
             {

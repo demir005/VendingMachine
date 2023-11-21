@@ -5,6 +5,7 @@ using VendingMachine.Data;
 using VendingMachine.Extensions;
 using VendingMachine.Models;
 using VendingMachine.Models.Dto;
+using VendingMachine.Services.Interfaces;
 
 namespace VendingMachine.Services
 {
@@ -23,12 +24,12 @@ namespace VendingMachine.Services
 
         public async Task<IEnumerable<Product>> GetAllProduct()
         {
-            return await  _dbContext.Products.Include(p=>p.SellerId).ToListAsync();
+            return await  _dbContext.Products.Include(p=>p.Seller).ToListAsync();
         }
 
         public async Task<Product> GetProductById(int id)
         {
-            return await _dbContext.Products.Include(p => p.SellerId).FirstOrDefaultAsync(p => p.Id == id);
+            return await _dbContext.Products.Include(p => p.Seller).FirstOrDefaultAsync(p => p.Id == id);
         }
         public async Task<Product> CreateProduct(Product product, string sellerId)
         {
@@ -40,7 +41,7 @@ namespace VendingMachine.Services
             await _dbContext.SaveChangesAsync();
             return product;
         }
-        public async Task<Product> UpdateProductAsync(int productId, Product product, string sellerId)
+        public async Task<Product> UpdateProductAsync(int productId, UpdateProductRequest product, string sellerId)
         {
             var existingProduct = await _dbContext.Products.FindAsync(productId);
 
@@ -49,7 +50,7 @@ namespace VendingMachine.Services
                 return null;
             }
 
-            if(existingProduct.SellerId == sellerId)
+            if(existingProduct.SellerId != sellerId)
             {
                 throw new UnauthorizedAccessException("You do not have permission to update this product.");
             }
@@ -63,7 +64,7 @@ namespace VendingMachine.Services
         public async Task<bool> DeleteProduct(int id, string sellerId)
         {
             var product = await _dbContext.Products.FindAsync(id);
-            if(product != null)
+            if(product == null)
             {
                 return false;
             }
